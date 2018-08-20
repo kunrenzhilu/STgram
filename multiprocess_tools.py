@@ -10,8 +10,6 @@ from errata import correct_errata
 from collections import defaultdict
 from utils import norm, normalize, extract_data, save_args, load_args, \
     save_embeddings, load_embeddings, DataStruct, save_model_tf
-from logger import Logger
-from model import init_params, crossentropy, choose_emb, choose_geo_loss, STSkipgram
 
 def map_compute_distance(args):
     if len(args) == 4:

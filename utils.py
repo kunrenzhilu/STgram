@@ -1,16 +1,3 @@
-# def modify_reverse_dictionary(rev_dict):
-#     newdict = dict()
-#     for i in range(len(rev_dict)):
-#         newdict[i] = rev_dict[i+1]
-#     return newdict
-# def modify_dictionary(dic):
-#     newdict = dict()
-#     for k, v in dic.items():
-#         newdict[k] = v-1
-#     return newdict
-# reverse_dictionary = modify_reverse_dictionary(reverse_dictionary)
-# dictionary = modify_dictionary(dictionary)
-
 import numpy as np
 import datetime
 import utils
@@ -27,12 +14,6 @@ l1normalize = lambda x: x/np.max((l1norm(x), 1e-10))
 class DataStruct:
     def __init__(self):
         pass
-    
-def init_losses(args):
-    losses = {'poi':[]}
-    if args.WITH_TIME:
-        losses['time'] = []
-    return losses
 
 def is_normalized_matrix(mat, epsilon=1e-6):
     indices = np.random.choice(mat.shape[0], size=10)

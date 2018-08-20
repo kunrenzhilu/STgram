@@ -13,6 +13,7 @@ def get_parser(args):
     parser.add_argument('--device', default='', type=str, help='which gpu device to use')
     parser.add_argument('--TIME_ONLY', default=False, action='store_true', help='using only time loss')
     parser.add_argument('--resume', default=False, action='store_true', help='resume experiment from checkpoint')
+    parser.add_argument('--n_processes', type=int, default=3, help='Number of processes to be use, default 3')
     
     #-- model parameters
     parser.add_argument('--geo_dim', type=int, default=50, help='geographic embedding dimension, default 50')

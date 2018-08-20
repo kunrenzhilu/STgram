@@ -111,11 +111,9 @@ class Evaluator(object):
         self.nProcess = args.n_processes
         self.relevent_lens_dict = compute_max_relevent_len(self.valid_ids, self.dicts)
         
-    def evaluate(self, model, sess,  K=10):
+    def evaluate(self, embed,  K=10):
         tick = time.time()
         ctgy_modes = ['root', 'sub']
-
-        embed = sess.run(model.sem_emb)
         if not is_normalized_matrix(embed):
             embed = normalize(embed)
         

@@ -8,7 +8,7 @@ def init_params(shape, param):
         return tf.constant(param)
     
 def crossentropy(y, p):
-    return -(y*tf.log(p)+(1-y)*tf.log(1-p))
+    return -(y*tf.log(tf.maximum(p, 1e-10))+(1-y)*tf.log(tf.maximum(1-p, 1e-10)))
 
 def choose_emb(args, emb, weight):
     assert args.main_emb in ['emb', 'weight', 'copy']

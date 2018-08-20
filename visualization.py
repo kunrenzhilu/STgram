@@ -40,7 +40,8 @@ def plot_multiple(shape, history, figsize=None, suptitle=None):
     indices = [(i,j) for i in range(shape[0]) for j in range(shape[1])]
     fig, axs = plt.subplots(nrows=shape[0], ncols=shape[1], figsize=figsize)
     if len(axs.shape) == 1: axs = axs[None,:]
-        
+    
+    #plot scores
     modes = ['sub', 'root']
     ks = [1, 5, 10]
     items = ['accuracy', 'recall', 'precision', 'f1', 'distance_sub', 'distance_root']
@@ -57,6 +58,14 @@ def plot_multiple(shape, history, figsize=None, suptitle=None):
                     legends.append(key)
             axs[idx].legend(legends, loc='upper right')
         axs[idx].set_title(item)
+    
+    #plot losses
+    lossitems = ['loss_{}'.format(w) for w in ['geo', 'time', 'skipgram']]
+    for i, item in enumerate(lossitems):
+        idx = indices[len(items) + i]
+        axs[idx].plot(history[item])
+        axs[idx].set_title(item)
+    
     if not suptitle is None: 
         fig.suptitle(suptitle)
     plt.show()

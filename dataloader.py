@@ -1,7 +1,11 @@
+seed = 1
+import numpy as np
+import random
+np.random.seed(seed)
+random.seed(seed)
 import os
 import h5py
 import pickle
-import numpy as np
 from collections import defaultdict
 from errata import correct_errata
 from utils import DataStruct
@@ -85,9 +89,8 @@ class DataLoader:
         return self.n_iter
     
     def data_generator(self, data, batch_size):
-        indices = list(range(len(data)))
         while True:
-            np.random.shuffle(indices)
+            np.random.shuffle(data)
             self.n_epoch += 1
             for i in range(0, len(data)-batch_size+1,batch_size):
                 self.n_iter += 1
@@ -117,9 +120,8 @@ class DataLoader_time:
         return self.n_iter
     
     def data_generator(self, data, batch_size):
-        indices = list(range(len(data)))
         while True:
-            np.random.shuffle(indices)
+            np.random.shuffle(data)
             self.n_epoch += 1
             for i in range(0, len(data)-batch_size+1,batch_size):
                 self.n_iter += 1

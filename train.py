@@ -1,18 +1,16 @@
+seed = 1
 import numpy as np
+import random
+np.random.seed(seed)
+random.seed(seed)
 import os 
-import sys
 import csv
 import pickle
-import random
-from datetime import datetime, timedelta
+import time
 import h5py
-import collections
 from collections import defaultdict
-import pandas
 import tensorflow as tf
 import json
-import math
-import time
 import matplotlib.pyplot as plt
 from sklearn.manifold import TSNE
 import numpy.ma as ma
@@ -20,15 +18,14 @@ config = tf.ConfigProto()
 config.gpu_options.allow_growth=True
 # config.gpu_options.per_process_gpu_memory_fraction = 0.3
 
-from errata import correct_errata
-import copy
-from utils import norm, normalize, is_normalized_matrix, extract_data,\
-                            init_losses, save_args, load_args, save_embeddings
-from dataloader import load_data, group_data_by_id
-from evaluation import Evaluator
-from logger import Logger
-from model import STSkipgram
+from dataloader import load_data, DataLoader, DataLoader_time
 from parser import get_parser
+from utils import norm, normalize, is_normalized_matrix, extract_data, save_args, load_args, \
+    save_embeddings, load_embeddings, DataStruct, save_model_tf, save_best_tf, load_model_tf
+from train import get_train_data
+from logger import Logger
+from model import init_params, crossentropy, choose_emb, choose_geo_loss, STSkipgram
+from multiprocess_tools import multiprocess_compute_distance
 
 def extract(list, indices):
     if type(list) is int:
@@ -163,7 +160,7 @@ def train(graph, sess, model, evaluator, logger, dataloader, dataloader_time):
             logstr = '#'*50+'\n'
             logstr += 'Ecpoh {}, used time: {}, eval: {}'.format(n_epoch, time.time()-epoch_tick, result)
             logger.log(logstr)
-    print('FINISH, USED TIME:{}'.format(time.time()-tick0))
+    logger.log('FINISH, USED TIME:{}'.format(time.time()-tick0))
     return sess
 
 if __name__=='__main__':
@@ -175,16 +172,18 @@ if __name__=='__main__':
     
     data, dicts = load_data(os.path.join(args.ROOT, 'data','{}_INTV_processed_voc5_len2_setting_WITH_GPS_WITH_TIME_WITH_USERID.pk'.format(args.CITY) ))
     args.vocabulary_size = dicts.vocabulary_size
-    data = extract_data(data, args) #put all data_extraction here
+    data, idx = extract_data(data, args) #put all data_extraction here
     train_data = get_train_data(data)
     
-    model = SkipGram(args, valid_examples=None, pretrained_emb=None, pretrained_weight=None, pretrained_time=None)
-    evaluator_emb = Evaluator(dicts, logger=Logger(os.path.join(args.LOG_DIR, 'tb_emb')))
-    evaluator_weight = Evaluator(dicts, logger=Logger(os.path.join(args.LOG_DIR, 'tb_weight')))
-    # sess.close()
-    dg = batch_generator(train_data, args.batch_size)
-    dg_t = batch_generator_t(data, args.batch_size)
-    sess = tf.Session(config=config)
-    final_emb, final_weight, sess = train(sess, [dg, dg_t], model, args, evaluator_emb, evaluator_weight)
+    dataloader = DataLoader(train_data, args)
+    dataloader_time = DataLoader_time(data, args, idx)
+    evaluator = Evaluator(args, dicts)
+    logger = Logger(os.path.join(args.LOG_DIR, 'log_txt'))
+
+    graph = tf.Graph()
+    with graph.as_default():
+        model = STSkipgram(args)
+        sess = tf.Session(graph=graph, config=config)
+    state = train(graph, sess, model, args, evaluator, logger, dataloader, dataloader_time)
     sess.close()
     print('Done, used time: {}'.format(time.time()-tick))
