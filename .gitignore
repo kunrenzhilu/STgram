@@ -1,0 +1,6 @@
+__pycache__
+*.pyc
+log_*
+.ipynb_checkpoints/*
+benchmark*
+visualization.ipynb
