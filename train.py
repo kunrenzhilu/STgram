@@ -5,6 +5,7 @@ np.random.seed(seed)
 random.seed(seed)
 import os 
 import csv
+import sys
 import pickle
 import time
 import h5py
@@ -16,13 +17,12 @@ from sklearn.manifold import TSNE
 import numpy.ma as ma
 config = tf.ConfigProto()
 config.gpu_options.allow_growth=True
-# config.gpu_options.per_process_gpu_memory_fraction = 0.3
+config.gpu_options.per_process_gpu_memory_fraction = 0.3
 
 from dataloader import load_data, DataLoader, DataLoader_time
 from parser import get_parser
 from utils import norm, normalize, is_normalized_matrix, extract_data, save_args, load_args, \
     save_embeddings, load_embeddings, DataStruct, save_model_tf, save_best_tf, load_model_tf
-from train import get_train_data
 from logger import Logger
 from model import init_params, crossentropy, choose_emb, choose_geo_loss, STSkipgram
 from multiprocess_tools import multiprocess_compute_distance
@@ -100,7 +100,13 @@ def update(losses, sk, geo, t):
 def compute_weight_decay(t1, t2, temp):
     return np.exp(-1*((t1-t2)/60*temp)**2)
 
-def train(graph, sess, model, evaluator, logger, dataloader, dataloader_time):
+def evaluate(emb, evaluator):
+    result = evaluator.evaluate(emb)
+    evaluator.update_history(res_dict=result)
+    evaluator.save_history()
+    return result
+
+def train(graph, sess, model, args, evaluator_emb, evaluator_weight, logger, dataloader, dataloader_time):
     save_args(args)
     losses = {'geo':[], 'skipgram':[], 'time':[]}
     n_batch = 0
@@ -120,18 +126,21 @@ def train(graph, sess, model, evaluator, logger, dataloader, dataloader_time):
         
         while dataloader.get_epoch() < args.num_epoch:
             if args.normalize_weight:
-                _, _ = sess.run([model.normalize_geo_op, model.normalize_sem_op])
+                _ = sess.run([model.normalize_geo_emb_op, model.normalize_sem_emb_op,
+                              model.normalize_geo_wht_op, model.normalize_sem_wht_op])
 
             epoch_tick = time.time()
-            result = evaluator.evaluate(model, sess)
-            evaluator.update_history(res_dict=result)
-            evaluator.save_history()
+            emb, weight = sess.run([model.sem_emb, model.sem_wht])
+            result_emb = evaluate(emb, evaluator_emb)
+            result_weight = evaluate(weight, evaluator_weight)
+            result = result_emb if args.main_emb == 'emb' else result_weight
             save_model_tf(saver, sess, args)
             if best_criteria.should_save(result):
                 tmp = dict(result)
                 tmp['epoch'] = n_epoch
                 tmp['batch'] = n_batch
                 save_best_tf(saver, sess, args, {'args':vars(args), 'result':tmp})
+            #-- Optimization steps 
             while n_epoch >= dataloader.get_epoch():
                 center, context = next(dataloader.dg)
                 sk_loss, _, geo_loss, _ = sess.run([model.weighted_skipgram_loss, model.train_skipgram, model.geo_loss, model.train_geo],
@@ -149,13 +158,14 @@ def train(graph, sess, model, evaluator, logger, dataloader, dataloader_time):
                 
                 if n_batch % 100 == 0:
                     losses = {k:np.mean(v) for k, v in losses.items()}
-                    evaluator.update_history(losses=losses)
+                    evaluator_emb.update_history(losses=losses)
+                    evaluator_weight.update_history(losses=losses)
                     logstr = '[{}] LOSS '.format(n_batch) + "".join(['{} : {:.6f} '.format(k, v) for k, v in losses.items()])
                     losses = {'geo':[], 'skipgram':[], 'time':[]}
                     logger.log(logstr)
                     
                 n_batch += 1
-                
+            #-----------------------
             n_epoch += 1
             logstr = '#'*50+'\n'
             logstr += 'Ecpoh {}, used time: {}, eval: {}'.format(n_epoch, time.time()-epoch_tick, result)
@@ -177,13 +187,14 @@ if __name__=='__main__':
     
     dataloader = DataLoader(train_data, args)
     dataloader_time = DataLoader_time(data, args, idx)
-    evaluator = Evaluator(args, dicts)
+    evaluator_emb = Evaluator(args, dicts, mode='emb')
+    evaluator_weight = Evaluator(args, dicts, mode='weight')
     logger = Logger(os.path.join(args.LOG_DIR, 'log_txt'))
 
     graph = tf.Graph()
     with graph.as_default():
         model = STSkipgram(args)
         sess = tf.Session(graph=graph, config=config)
-    state = train(graph, sess, model, args, evaluator, logger, dataloader, dataloader_time)
+    state = train(graph, sess, model, args, evaluator_emb, evaluator_weight, logger, dataloader, dataloader_time)    
     sess.close()
     print('Done, used time: {}'.format(time.time()-tick))

@@ -102,8 +102,9 @@ def get_scores(top_matches, dicts, valid_ids, mode='score', K=10, relevent_lens_
     return results
 
 class Evaluator(object):
-    def __init__(self, args, dicts, valid_ids=None, tflogger=None):
+    def __init__(self, args, dicts, mode, valid_ids=None, tflogger=None):
         self.log_dir = args.LOG_DIR
+        self.mode = 'emb' if mode is None else mode
         self.dicts = dicts
         self.valid_ids = range(args.vocabulary_size-1) if valid_ids is None else valid_ids
         self.history = defaultdict(list)
@@ -145,13 +146,13 @@ class Evaluator(object):
                     self.tflogger.scalar_summary(tag=k, value=v, step=len(self.history[k]))
         
     def save_history(self):
-        save_path = os.path.join(self.log_dir, 'history.pk')
+        save_path = os.path.join(self.log_dir, '{}_history.pk'.format(self.mode))
         with open(save_path, 'wb') as f:
             pickle.dump(self.history, f)
         print('saved history to {}'.format(save_path))
     
     def load_history(self, args):
-        path = os.path.join(args.LOG_DIR, 'history.pk')
+        path = os.path.join(args.LOG_DIR, '{}_history.pk'.format(self.mode))
         print('load history from {}'.format(path))
         with open(path, 'rb') as f:
             self.history = pickle.load(f)

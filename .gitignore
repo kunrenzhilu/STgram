@@ -4,3 +4,4 @@ log_*
 .ipynb_checkpoints/*
 benchmark*
 visualization.ipynb
+exp*

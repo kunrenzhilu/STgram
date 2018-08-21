@@ -6,10 +6,10 @@ def get_parser(args):
     
     #-- train
     parser.add_argument('--lr', type=float, default=1e-3, help='learning rate')
-    parser.add_argument('--batch_size', type=int, default=64, help='batch size')
+    parser.add_argument('--batch_size', type=int, default=256, help='batch size')
     parser.add_argument('--vocabulary_size', type=int, default=-1, help='please retrive the number of node accordingly')
     parser.add_argument('--num_negative_sample', type=int, default=64, help='number of negative sample used for sampled_softmax_loss, default 64')
-    parser.add_argument('--num_epoch', type=int, default=50, help='the number of training epoch, should be used exclusively with the num_steps, default 50')
+    parser.add_argument('--num_epoch', type=int, default=40, help='the number of training epoch, should be used exclusively with the num_steps, default 50')
     parser.add_argument('--device', default='', type=str, help='which gpu device to use')
     parser.add_argument('--TIME_ONLY', default=False, action='store_true', help='using only time loss')
     parser.add_argument('--resume', default=False, action='store_true', help='resume experiment from checkpoint')

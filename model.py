@@ -28,12 +28,20 @@ def choose_geo_loss(geo_reg_type, loss_l2, loss_xn):
     else: raise ValueError('geo_type unexpected, got {}'.format(args.geo_reg_type))
     return loss
 
+def slice_func(mat, sizes):
+    from functools import reduce
+    indices = [0]+[reduce(lambda x,y:x+y, sizes[:i]) for i in range(1,len(sizes)+1)]
+    tmp = list()
+    for i in range(len(indices)-1):
+        start, end = indices[i], indices[i+1]
+        tmp.append(mat[:,start:end])
+    return tmp
+
 class STSkipgram(object):
-    def __init__(self, args, pretrained_sem=None, pretrained_geo=None, pretrained_weight=None, pretrained_time=None):
-        self.pretrained_semantic = init_params((args.vocabulary_size, args.sem_dim), pretrained_sem)
-        self.pretrained_geo = init_params((args.vocabulary_size, args.geo_dim), pretrained_geo)
-        self.pretrained_weight = init_params((args.vocabulary_size, args.sem_dim+args.geo_dim+args.free_dim), pretrained_weight)
-        self.pretrained_time = init_params((args.n_timeslot, args.sem_dim), pretrained_time)
+    def __init__(self, args, pretrained_emb=None, pretrained_weight=None, pretrained_time=None):
+        self.pretrained_emb   = init_params((args.vocabulary_size, args.sem_dim+args.geo_dim+args.free_dim), pretrained_emb)
+        self.pretrained_weight= init_params((args.vocabulary_size, args.sem_dim+args.geo_dim+args.free_dim), pretrained_weight)
+        self.pretrained_time  = init_params((args.n_timeslot, args.sem_dim), pretrained_time)
         
         # --Placeholders
         self.center_loc   = tf.placeholder(tf.int32, shape=[None], name='center_loc')
@@ -44,17 +52,13 @@ class STSkipgram(object):
         self.label_t      = tf.placeholder(tf.int32, shape=[None], name='label_t')
         
         # --Weights
-        self.softmax_weights= tf.get_variable('weights', initializer=self.pretrained_weight)
+        slice_indices       = [args.sem_dim, args.geo_dim, args.free_dim]
         self.softmax_biases = tf.get_variable('bias', initializer=tf.zeros([args.vocabulary_size]), trainable=False)
-        self.sem_emb        = tf.get_variable('semantic_emb', initializer=self.pretrained_semantic)
-        self.geo_emb        = tf.get_variable('geo_emb', initializer=self.pretrained_geo)
-        self.embeddings     = tf.concat([self.sem_emb, self.geo_emb], axis=1)
+        self.softmax_weights= tf.get_variable('weights', initializer=self.pretrained_weight)
+        self.embeddings     = tf.get_variable('embeddings', initializer=self.pretrained_emb)
         self.time_embeddings= tf.get_variable('time_embeddings', initializer=self.pretrained_time)
-
-        if args.free_dim > 0:
-            self.free_emb   = tf.get_variable('free_emb', shape=(args.vocabulary_size, args.free_dim), 
-                               initializer=tf.keras.initializers.he_uniform())
-            self.embeddings = tf.concat([self.embeddings, self.free_emb], axis=1)
+        self.sem_emb, self.geo_emb, self.free_emb = slice_func(self.embeddings, slice_indices)
+        self.sem_wht, self.geo_wht, self.free_wht = slice_func(self.softmax_weights, slice_indices)
         
         # --Retrive Embeddings
         self.main_emb, self.context_emb = choose_emb(args, emb=self.embeddings, weight=self.softmax_weights)
@@ -90,8 +94,10 @@ class STSkipgram(object):
             labels=self.label_t, logits=emb_dot_time))
         
         # --Normalization
-        self.normalize_geo_op = tf.assign(self.geo_emb, tf.nn.l2_normalize(self.geo_emb, axis=1))
-        self.normalize_sem_op = tf.assign(self.sem_emb, tf.nn.l2_normalize(self.sem_emb, axis=1))
+        self.normalize_geo_emb_op = tf.assign(self.geo_emb, tf.nn.l2_normalize(self.geo_emb, axis=1))
+        self.normalize_sem_emb_op = tf.assign(self.sem_emb, tf.nn.l2_normalize(self.sem_emb, axis=1))
+        self.normalize_geo_wht_op = tf.assign(self.geo_wht, tf.nn.l2_normalize(self.geo_wht, axis=1))
+        self.normalize_sem_wht_op = tf.assign(self.sem_wht, tf.nn.l2_normalize(self.sem_wht, axis=1))
         
         # --Optimization
         global_step_g = tf.Variable(0, trainable=False)
