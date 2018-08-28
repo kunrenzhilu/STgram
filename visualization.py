@@ -5,6 +5,15 @@ import os
 import pickle
 import time
 from errata import correct_errata
+from collections import OrderedDict
+
+def get_color():
+    return np.random.uniform(size=3)
+
+def get_key(exp_path):
+    exp, mode = exp_path.split('/')[-2:]
+    mode = mode.split('_')[0]
+    return '_'.join(exp.split('_')[1:]) + '/{}'.format(mode)
 
 def get_ctgy_histogram_dict(traj_list, dicts):
     timebins = list(range(24))
@@ -36,14 +45,13 @@ def integrate_dicts(dict, keyword_list):
                 res_dict[kw] += dict[k]
     return res_dict
 
-def plot_multiple(shape, history, figsize=None, suptitle=None):
+def plot_multiple(shape, history, ks=[1,5,10], figsize=None, suptitle=None):
     indices = [(i,j) for i in range(shape[0]) for j in range(shape[1])]
     fig, axs = plt.subplots(nrows=shape[0], ncols=shape[1], figsize=figsize)
     if len(axs.shape) == 1: axs = axs[None,:]
     
     #plot scores
     modes = ['sub', 'root']
-    ks = [1, 5, 10]
     items = ['accuracy', 'recall', 'precision', 'f1', 'distance_sub', 'distance_root']
     for i, item in enumerate(items):
         idx = indices[i]
@@ -69,6 +77,59 @@ def plot_multiple(shape, history, figsize=None, suptitle=None):
     if not suptitle is None: 
         fig.suptitle(suptitle)
     plt.show()
+    return fig
+
+def compare_multiple(shape, histories_dict, metric_k=10, figsize=None, suptitle=None, plot_loss=False):
+    assert type(histories_dict) is OrderedDict
+    indices = [(i,j) for i in range(shape[0]) for j in range(shape[1])]
+    fig, axs = plt.subplots(nrows=shape[0], ncols=shape[1], figsize=figsize)
+    if len(axs.shape) == 1: axs = axs[None,:]
+        
+    modes = ['sub', 'root']
+    items = ['accuracy', 'recall', 'precision', 'f1', 'harabaz', 'silhouette', 'distance_sub', 'distance_root']
+    for i, item in enumerate(items):
+        idx = indices[i]
+        if 'distance' in item:
+            lgds = []
+            for k, history in histories_dict.items():
+                axs[idx].plot(history[item])
+                lgds.append(k)
+            axs[idx].legend(lgds, loc='upper right')
+            axs[idx].set_title(item)
+        elif item in ['harabaz', 'silhouette']:
+            legends = []
+            for mode in modes:
+                for k, history in histories_dict.items():
+                    key = '{}_{}'.format(item, mode)
+                    axs[idx].plot(history[key])
+                    legends.append('{}_{}'.format(key, k))
+                axs[idx].legend(legends, loc='upper right')
+                axs[idx].set_title(item)
+        else:
+            lgds = []
+            for mode in modes:
+                for k, history in histories_dict.items():  
+                    key = '{}_{}_{}'.format(mode, item, metric_k)
+                    axs[idx].plot(history[key], c=get_color())
+                    lgds.append('{}_{}'.format(key, k))
+            axs[idx].legend(lgds, loc='upper right')
+            axs[idx].set_title(item)
+            
+    if plot_loss:
+        lossitems = ['loss_{}'.format(w) for w in ['geo', 'time', 'skipgram']]
+        for i, item in enumerate(lossitems):
+            if len(items)+1 == len(indices): break
+            idx = indices[len(items)+i]
+            lgds = []
+            for k, history in histories_dict.items():
+                axs[idx].plot(history[item])
+                lgds.append(k)
+            axs[idx].legend(lgds, loc='upper right')
+            axs[idx].set_title(item)
+        
+    if not suptitle is None:
+        fig.suptitle(suptitle)
+#     plt.show()
     return fig
 
 def plot_history(history, mode='precision', keys=None, title=None):

@@ -4,9 +4,10 @@ import utils
 import os
 import json
 import h5py
+import tensorflow as tf
 import matplotlib.pyplot as plt
+from sklearn.preprocessing import normalize
 
-normalize = lambda x: x/np.max((norm(x), np.ones(shape=(x.shape[0], 1))*1e-10))
 norm = lambda x: np.sqrt(np.sum(np.square(x), axis=-1,keepdims=True))
 l1norm = lambda x: np.sum(np.abs(x), axis=-1, keepdims=True)
 l1normalize = lambda x: x/np.max((l1norm(x), 1e-10))
@@ -120,3 +121,19 @@ def load_embeddings(path):
         data = f.get('embeddings').value
     print('Reading dadta from {}'.format(path))
     return data
+
+def save_emb_from_ckpt(args):
+    config = tf.ConfigProto()
+    config.gpu_options.allow_growth=True
+    tick = time.time()
+    
+    graph = tf.Graph()
+    with graph.as_default():
+        model = STSkipgram(args)
+        saver = tf.train.Saver(model.all_params)
+        sess = tf.Session(config=config)
+        sess = load_model_tf(saver, args, sess, path=os.path.join(args.LOG_DIR, 'best', 'model.ckpt'))
+        emb, weight = sess.run([model.sem_emb, model.embeddings])
+        save_embeddings(os.path.join(args.LOG_DIR, '{}_embeddings.h5'.format(args.CITY)), emb)
+        save_embeddings(os.path.join(args.LOG_DIR, '{}_weights.h5'.format(args.CITY)), weight)
+    print('Done, saved everything to {}, Used time {}'.format(args.LOG_DIR, time.time()-tick))

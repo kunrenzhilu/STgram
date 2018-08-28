@@ -16,11 +16,12 @@ import matplotlib.pyplot as plt
 from sklearn.manifold import TSNE
 import numpy.ma as ma
 config = tf.ConfigProto()
-config.gpu_options.allow_growth=True
-config.gpu_options.per_process_gpu_memory_fraction = 0.3
+# config.gpu_options.allow_growth=True
+config.gpu_options.per_process_gpu_memory_fraction = 0.1
 
 from dataloader import load_data, DataLoader, DataLoader_time
 from parser import get_parser
+from evaluation import Evaluator
 from utils import norm, normalize, is_normalized_matrix, extract_data, save_args, load_args, \
     save_embeddings, load_embeddings, DataStruct, save_model_tf, save_best_tf, load_model_tf
 from logger import Logger
@@ -113,7 +114,7 @@ def train(graph, sess, model, args, evaluator_emb, evaluator_weight, logger, dat
     n_epoch = 0
     tick0 = time.time()
     
-    best_criteria = BestCriteria(['{}_f1_{}'.format(mode, k) for mode in ['sub', 'root'] for k in [1,5,10]])
+    best_criteria = BestCriteria(['{}_f1_{}'.format(mode, k) for mode in ['sub', 'root'] for k in args.Ks])
     with graph.as_default():
         saver = tf.train.Saver(model.all_params)
         if args.resume:
@@ -182,6 +183,7 @@ if __name__=='__main__':
     
     data, dicts = load_data(os.path.join(args.ROOT, 'data','{}_INTV_processed_voc5_len2_setting_WITH_GPS_WITH_TIME_WITH_USERID.pk'.format(args.CITY) ))
     args.vocabulary_size = dicts.vocabulary_size
+    args.Ks = list(map(int, args.Ks.split(',')))
     data, idx = extract_data(data, args) #put all data_extraction here
     train_data = get_train_data(data)
     

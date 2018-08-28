@@ -14,16 +14,17 @@ def get_parser(args):
     parser.add_argument('--TIME_ONLY', default=False, action='store_true', help='using only time loss')
     parser.add_argument('--resume', default=False, action='store_true', help='resume experiment from checkpoint')
     parser.add_argument('--n_processes', type=int, default=3, help='Number of processes to be use, default 3')
+    parser.add_argument('--Ks', type=str, default='1,5,10', help='Number of k to be evaluated, default=1,5,10')
     
     #-- model parameters
     parser.add_argument('--geo_dim', type=int, default=50, help='geographic embedding dimension, default 50')
     parser.add_argument('--sem_dim', type=int, default=50, help='semantic embedding dimension, default 50')
     parser.add_argument('--free_dim', type=int, default=0, help='the free dimension in the embedding')
     parser.add_argument('--normalize_weight', default=False, action='store_true', help='whether to normalize the embeddings during training')
-    parser.add_argument('--geo_temp', type=float, default=10, help='the temperature for geo distance regularizor')
-    parser.add_argument('--time_temp', type=float, default=0.01, help='the temperature for time difference regularizor')
+    parser.add_argument('--geo_temp', type=float, default=0.1, help='the temperature for geo distance regularizor')
+    parser.add_argument('--time_temp', type=float, default=0.1, help='the temperature for time difference regularizor')
     parser.add_argument('--geo_reg_type', type=str, choices=['l2', 'xn'], help='choose regularizor type between l2_loss or crossentropy loss')
-    parser.add_argument('--regulation_weight', type=float, default=10, help='the regularization loss weight')
+    parser.add_argument('--regulation_weight', type=float, default=100, help='the regularization loss weight')
     parser.add_argument('--main_emb', type=str, default='emb', choices=['emb', 'weight', 'copy'], help='to experiment which embedding works better')
     
     #-- general
@@ -51,6 +52,9 @@ def get_parser(args):
     else: 
         args.n_timeslot = -1
     args.TB_DIR = os.path.join(args.LOG_DIR, 'tb')
+    args.Ks = list(map(int, args.Ks.split(',')))
+    if args.CITY == 'NYC':
+        args.vocabulary_size = 5453
     #args.EMB_DIR = os.path.join(args.LOG_DIR
     return args
     
