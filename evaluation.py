@@ -141,16 +141,16 @@ class Evaluator(object):
         distance_mat = 1-np.matmul(embed, embed.T)
         
         # evaluate distance:    
-#         print('eval distance')
-#         distance_mat = 1-np.matmul(embed, embed.T) #get ride of the 'UNK'
-#         for cmode in ctgy_modes:
-#             self.history['distance_{}'.format(cmode)].append(
-#                 multiprocess_compute_distance(self.nProcess, distance_mat, self.dicts, cmode))
+        print('eval distance')
+        distance_mat = 1-np.matmul(embed, embed.T) #get ride of the 'UNK'
+        for cmode in ctgy_modes:
+            self.history['distance_{}'.format(cmode)].append(
+                multiprocess_compute_distance(self.nProcess, distance_mat, self.dicts, cmode))
             
         #evaluate silhouette_score and calinski_harabaz_score
-#         for cmode in ctgy_modes:
-#             self.history['silhouette_{}'.format(cmode)].append(silhouette_score(distance_mat, self.label_dict[cmode], metric='cosine'))
-#             self.history['harabaz_{}'.format(cmode)].append(calinski_harabaz_score(embed, self.label_dict[cmode]))
+        for cmode in ctgy_modes:
+            self.history['silhouette_{}'.format(cmode)].append(silhouette_score(distance_mat, self.label_dict[cmode], metric='cosine'))
+            self.history['harabaz_{}'.format(cmode)].append(calinski_harabaz_score(embed, self.label_dict[cmode]))
             
         # evaluate translation:
         mode = 'score'

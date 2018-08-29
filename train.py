@@ -183,7 +183,6 @@ if __name__=='__main__':
     
     data, dicts = load_data(os.path.join(args.ROOT, 'data','{}_INTV_processed_voc5_len2_setting_WITH_GPS_WITH_TIME_WITH_USERID.pk'.format(args.CITY) ))
     args.vocabulary_size = dicts.vocabulary_size
-    args.Ks = list(map(int, args.Ks.split(',')))
     data, idx = extract_data(data, args) #put all data_extraction here
     train_data = get_train_data(data)
     

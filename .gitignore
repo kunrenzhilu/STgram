@@ -3,5 +3,5 @@ __pycache__
 log_*
 .ipynb_checkpoints/*
 benchmark*
-visualization.ipynb
+Visualization.ipynb
 exp*

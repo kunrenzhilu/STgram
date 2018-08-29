@@ -6,11 +6,13 @@ import json
 import h5py
 import tensorflow as tf
 import matplotlib.pyplot as plt
+import time
 from sklearn.preprocessing import normalize
+from model import STSkipgram
 
 norm = lambda x: np.sqrt(np.sum(np.square(x), axis=-1,keepdims=True))
 l1norm = lambda x: np.sum(np.abs(x), axis=-1, keepdims=True)
-l1normalize = lambda x: x/np.max((l1norm(x), 1e-10))
+l1normalize = lambda x: normalize(x, norm='l1', axis=-1)
 
 class DataStruct:
     def __init__(self):
@@ -133,7 +135,8 @@ def save_emb_from_ckpt(args):
         saver = tf.train.Saver(model.all_params)
         sess = tf.Session(config=config)
         sess = load_model_tf(saver, args, sess, path=os.path.join(args.LOG_DIR, 'best', 'model.ckpt'))
-        emb, weight = sess.run([model.sem_emb, model.embeddings])
-        save_embeddings(os.path.join(args.LOG_DIR, '{}_embeddings.h5'.format(args.CITY)), emb)
-        save_embeddings(os.path.join(args.LOG_DIR, '{}_weights.h5'.format(args.CITY)), weight)
+        sem_emb, full_emb = sess.run([model.sem_emb, model.embeddings])
+        save_embeddings(os.path.join(args.LOG_DIR, '{}_sem_emb.h5'.format(args.CITY)), sem_emb)
+        save_embeddings(os.path.join(args.LOG_DIR, '{}_embeddings.h5'.format(args.CITY)), full_emb)
+#         save_embeddings(os.path.join(args.LOG_DIR, '{}_embeddings.h5'.format(args.CITY)), emb)
     print('Done, saved everything to {}, Used time {}'.format(args.LOG_DIR, time.time()-tick))

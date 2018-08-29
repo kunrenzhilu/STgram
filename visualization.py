@@ -84,9 +84,12 @@ def compare_multiple(shape, histories_dict, metric_k=10, figsize=None, suptitle=
     indices = [(i,j) for i in range(shape[0]) for j in range(shape[1])]
     fig, axs = plt.subplots(nrows=shape[0], ncols=shape[1], figsize=figsize)
     if len(axs.shape) == 1: axs = axs[None,:]
-        
+    color_map = [np.random.uniform(size=3) for i in range(len(histories_dict))]
+    color_maps = {'sub':color_map, 'root':color_map}
+    
     modes = ['sub', 'root']
-    items = ['accuracy', 'recall', 'precision', 'f1', 'harabaz', 'silhouette', 'distance_sub', 'distance_root']
+#     items = ['accuracy', 'recall', 'precision', 'f1', 'harabaz', 'silhouette', 'distance_sub', 'distance_root']
+    items = ['accuracy', 'recall', 'precision', 'f1', 'distance_sub', 'distance_root']
     for i, item in enumerate(items):
         idx = indices[i]
         if 'distance' in item:
@@ -94,7 +97,7 @@ def compare_multiple(shape, histories_dict, metric_k=10, figsize=None, suptitle=
             for k, history in histories_dict.items():
                 axs[idx].plot(history[item])
                 lgds.append(k)
-            axs[idx].legend(lgds, loc='upper right')
+            axs[idx].legend(lgds, loc='lower right')
             axs[idx].set_title(item)
         elif item in ['harabaz', 'silhouette']:
             legends = []
@@ -103,16 +106,16 @@ def compare_multiple(shape, histories_dict, metric_k=10, figsize=None, suptitle=
                     key = '{}_{}'.format(item, mode)
                     axs[idx].plot(history[key])
                     legends.append('{}_{}'.format(key, k))
-                axs[idx].legend(legends, loc='upper right')
+                axs[idx].legend(legends, loc='lower right')
                 axs[idx].set_title(item)
         else:
             lgds = []
             for mode in modes:
-                for k, history in histories_dict.items():  
+                for j, (k, history) in enumerate(histories_dict.items()):  
                     key = '{}_{}_{}'.format(mode, item, metric_k)
-                    axs[idx].plot(history[key], c=get_color())
+                    axs[idx].plot(history[key], c=color_maps[mode][j])
                     lgds.append('{}_{}'.format(key, k))
-            axs[idx].legend(lgds, loc='upper right')
+            axs[idx].legend(lgds, loc='lower right')
             axs[idx].set_title(item)
             
     if plot_loss:
@@ -124,7 +127,7 @@ def compare_multiple(shape, histories_dict, metric_k=10, figsize=None, suptitle=
             for k, history in histories_dict.items():
                 axs[idx].plot(history[item])
                 lgds.append(k)
-            axs[idx].legend(lgds, loc='upper right')
+            axs[idx].legend(lgds, loc='lower right')
             axs[idx].set_title(item)
         
     if not suptitle is None:

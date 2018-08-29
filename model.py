@@ -8,7 +8,7 @@ def init_params(shape, param):
         return tf.constant(param)
     
 def crossentropy(y, p):
-    return -(y*tf.log(tf.maximum(p, 1e-10))+(1-y)*tf.log(tf.maximum(1-p, 1e-10)))
+    return tf.reduce_mean(-(y*tf.log(tf.maximum(p, 1e-10))+(1-y)*tf.log(tf.maximum(1-p, 1e-10))))
 
 def choose_emb(args, emb, weight):
     assert args.main_emb in ['emb', 'weight', 'copy']
@@ -104,7 +104,7 @@ class STSkipgram(object):
         learning_rate = tf.train.exponential_decay(args.lr, global_step_g, 5000, 0.5, staircase=True) 
         self.optimizer = tf.train.AdamOptimizer(learning_rate)
         self.train_t = self.optimizer.minimize(self.time_loss)
-        self.train_skipgram = self.optimizer.minimize(self.skipgram_loss)
+        self.train_skipgram = self.optimizer.minimize(self.weighted_skipgram_loss)
         self.train_geo = self.optimizer.minimize(self.geo_loss)
 
         # --Summaries
